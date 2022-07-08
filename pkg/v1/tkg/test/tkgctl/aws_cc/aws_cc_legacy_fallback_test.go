@@ -13,8 +13,8 @@ import (
 )
 
 var _ = Describe("Functional tests for aws (clusterclass) - Antrea", func() {
-	E2ECommonSpec(context.TODO(), func() E2ECommonSpecInput {
-		return E2ECommonSpecInput{
+	E2ELegacyFallbackSpec(context.TODO(), func() E2ELegacyFallbackSpecInput {
+		return E2ELegacyFallbackSpecInput{
 			E2EConfig:       e2eConfig,
 			ArtifactsFolder: artifactsFolder,
 			Cni:             "antrea",
