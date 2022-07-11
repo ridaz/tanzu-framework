@@ -6,7 +6,6 @@ package tkgs
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"io"
 	"os"
@@ -170,7 +169,7 @@ var _ = Describe("TKGS - Create workload cluster use cases", func() {
 			})
 		})
 	})
-	Context("input file is Cluster Class based", func() {
+	FContext("input file is Cluster Class based", func() {
 		var(
 			clusterName string
 			namespace string
@@ -189,16 +188,8 @@ var _ = Describe("TKGS - Create workload cluster use cases", func() {
 				tkgctlClient, err = tkgctl.New(tkgctlOptions)
 				Expect(err).To(BeNil())
 			})
-			It("should create cluster class based workload cluster and delete it", func() {
-				By(fmt.Sprintf("creating cluster class based workload cluster, cli feature flag is enabled"))
-				err = tkgctlClient.CreateCluster(clusterOptions)
-				Expect(err).To(BeNil())
-
-				
-				By(fmt.Sprintf("deleting cluster class based workload cluster %v in namespace: %v", clusterName, namespace))
-				//err = exec.KubectlWithArgs(context.Background(), e2eConfig.TKGSKubeconfigPath, "--context", e2eConfig.TKGSKubeconfigContext, "delete", "cluster", ccObject.GetName(), "-n", ccObject.GetNamespace())
-				err = tkgctlClient.DeleteCluster(deleteClusterOptions)
-				Expect(err).To(BeNil())
+			It("should return success or error based on the ClusterClass feature-gate status on the Supervisor", func() {
+				createClusterClassBasedClusterTest(tkgctlClient,deleteClusterOptions,true,clusterName,namespace)
 			})
 		})
 		When("cluster class cli feature flag (features.global.package-based-lcm-beta) is set to false", func() {
@@ -209,19 +200,26 @@ var _ = Describe("TKGS - Create workload cluster use cases", func() {
 				Expect(err).To(BeNil())
 			})
 			It("should return success or error based on the ClusterClass feature-gate status on the Supervisor", func() {
-				featureGateHelper := tkgctlClient.FeatureGateHelper()
-				isClusterClassFeatureActivated, _ := featureGateHelper.FeatureActivatedInNamespace(context.Background(), constants.ClusterClassFeature, constants.TKGSClusterClassNamespace)
-				if isClusterClassFeatureActivated {
-					By(fmt.Sprintf("creating Cluster class based workload cluster, ClusterClass feature-gate is activated"))
-					err = tkgctlClient.CreateCluster(clusterOptions)
-					Expect(err).To(BeNil())
-				} else {
-					By(fmt.Sprintf("creating Cluster class based workload cluster, ClusterClass feature-gate is deactivated"))
-					err = tkgctlClient.CreateCluster(clusterOptions)
-					Expect(err).NotTo(BeNil())
-					Expect(err.Error()).To(ContainSubstring(fmt.Sprintf(constants.ErrorMsgFeatureGateNotActivated, constants.ClusterClassFeature, constants.TKGSClusterClassNamespace)))
-				}
+				createClusterClassBasedClusterTest(tkgctlClient,deleteClusterOptions,false,clusterName,namespace)
 			})
 		})
 	})
 })
+
+func createClusterClassBasedClusterTest(tkgctlClient tkgctl.TKGClient, deleteClusterOptions tkgctl.DeleteClustersOptions, cliFlag bool, clusterName, namespace string){
+	if isClusterClassFeatureActivated {
+		By(fmt.Sprintf("creating Cluster class based workload cluster, ClusterClass feature-gate is activated and cli feature flag set %v",cliFlag))
+		err = tkgctlClient.CreateCluster(clusterOptions)
+		Expect(err).To(BeNil())
+
+		By(fmt.Sprintf("deleting cluster class based workload cluster %v in namespace: %v", clusterName, namespace))
+		//err = exec.KubectlWithArgs(context.Background(), e2eConfig.TKGSKubeconfigPath, "--context", e2eConfig.TKGSKubeconfigContext, "delete", "cluster", ccObject.GetName(), "-n", ccObject.GetNamespace())
+		err = tkgctlClient.DeleteCluster(deleteClusterOptions)
+		Expect(err).To(BeNil())
+	} else {
+		By(fmt.Sprintf("creating Cluster class based workload cluster, ClusterClass feature-gate is deactivated and cli feature flag set %v",cliFlag))
+		err = tkgctlClient.CreateCluster(clusterOptions)
+		Expect(err).NotTo(BeNil())
+		Expect(err.Error()).To(ContainSubstring(fmt.Sprintf(constants.ErrorMsgFeatureGateNotActivated, constants.ClusterClassFeature, constants.TKGSClusterClassNamespace)))
+	}
+}

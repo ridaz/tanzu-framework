@@ -38,6 +38,8 @@ var (
 	clusterOptions       tkgctl.CreateClusterOptions
 	tkgctlOptions        tkgctl.Options
 	tkgctlClient         tkgctl.TKGClient
+	isClusterClassFeatureActivated bool
+	isTKCAPIFeatureActivated bool
 )
 
 func TestE2E(t *testing.T) {
@@ -94,9 +96,14 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	tkgctlClient, err = tkgctl.New(tkgctlOptions)
 	var isTKGS bool
 	isTKGS, err = tkgctlClient.IsPacificRegionalCluster()
-	Expect(err).ShouldNot(HaveOccurred(),fmt.Sprintf("failed to connect cluster with given input kube config:%v and context:%v, reason: %v", e2eConfig.TKGSKubeconfigPath, e2eConfig.TKGSKubeconfigContext, err))
+	Expect(err).ShouldNot(HaveOccurred(),fmt.Sprintf("failed to connect cluster with given input kube config file:%v and context:%v, reason: %v", e2eConfig.TKGSKubeconfigPath, e2eConfig.TKGSKubeconfigContext, err))
 	Expect(isTKGS).To(Equal(true), fmt.Sprintf("the input kube config file:%v with given context:%v is not TKGS cluster",e2eConfig.TKGSKubeconfigPath, e2eConfig.TKGSKubeconfigContext))
 
+	featureGateHelper := tkgctlClient.FeatureGateHelper()
+	isClusterClassFeatureActivated, _ = featureGateHelper.FeatureActivatedInNamespace(context.Background(), constants.ClusterClassFeature, constants.TKGSClusterClassNamespace)
+	isTKCAPIFeatureActivated, _ = featureGateHelper.FeatureActivatedInNamespace(context.Background(), constants.TKCAPIFeature, constants.TKGSTKCAPINamespace)
+	By(fmt.Sprintf("in the tkgs cluster the %v feature is %v, and the %v feature is %v",  constants.ClusterClassFeature, isClusterClassFeatureActivated,constants.TKCAPIFeature, isTKCAPIFeatureActivated))
+	
 	return []byte(
 		strings.Join([]string{
 			artifactsFolder,
