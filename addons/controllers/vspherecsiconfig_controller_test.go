@@ -5,6 +5,7 @@ package controllers
 
 import (
 	"fmt"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"os"
 	"regexp"
 	"strings"
@@ -20,6 +21,7 @@ import (
 	"github.com/vmware-tanzu/tanzu-framework/addons/pkg/constants"
 	"github.com/vmware-tanzu/tanzu-framework/addons/test/testutil"
 	csiv1alpha1 "github.com/vmware-tanzu/tanzu-framework/apis/csi/v1alpha1"
+	topologyv1alpha1 "github.com/vmware-tanzu/vm-operator/external/tanzu-topology/api/v1alpha1"
 )
 
 var _ = Describe("VSphereCSIConfig Reconciler", func() {
@@ -275,6 +277,18 @@ var _ = Describe("VSphereCSIConfig Reconciler", func() {
 			clusterName = "test-cluster-pv-csi"
 			clusterResourceFilePath = "testdata/test-vsphere-csi-paravirtual.yaml"
 			enduringResourcesFilePath = "testdata/vmware-csi-system-ns.yaml"
+
+			// Create availability zones
+			availabilityzones := &topologyv1alpha1.AvailabilityZone{
+				TypeMeta: metav1.TypeMeta{},
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-az",
+				},
+				Spec:   topologyv1alpha1.AvailabilityZoneSpec{},
+				Status: topologyv1alpha1.AvailabilityZoneStatus{},
+			}
+			k8sClient.Create(ctx, availabilityzones)
+
 		})
 		It("Should reconcile VSphereCSIConfig and create data values secret for VSphereCSIConfig on management cluster", func() {
 			// the data values secret should be generated
@@ -297,6 +311,7 @@ var _ = Describe("VSphereCSIConfig Reconciler", func() {
 				Expect(strings.Contains(secretData, "namespace: vmware-system-csi")).Should(BeTrue())
 				Expect(strings.Contains(secretData, "supervisor_master_endpoint_hostname: supervisor.default.svc")).Should(BeTrue())
 				Expect(strings.Contains(secretData, "supervisor_master_port: 6443")).Should(BeTrue())
+				Expect(strings.Contains(secretData, "zone: true")).Should(BeTrue())
 				Expect(strings.Contains(secretData, "feature_states:")).Should(BeTrue())
 				Expect(strings.Contains(secretData, "state1: value1")).Should(BeTrue())
 				Expect(strings.Contains(secretData, "state2: value2")).Should(BeTrue())
