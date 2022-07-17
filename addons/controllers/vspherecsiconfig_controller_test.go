@@ -311,6 +311,7 @@ var _ = Describe("VSphereCSIConfig Reconciler", func() {
 				Expect(strings.Contains(secretData, "namespace: vmware-system-csi")).Should(BeTrue())
 				Expect(strings.Contains(secretData, "supervisor_master_endpoint_hostname: supervisor.default.svc")).Should(BeTrue())
 				Expect(strings.Contains(secretData, "supervisor_master_port: 6443")).Should(BeTrue())
+				// zone should be true
 				Expect(strings.Contains(secretData, "zone: true")).Should(BeTrue())
 				Expect(strings.Contains(secretData, "feature_states:")).Should(BeTrue())
 				Expect(strings.Contains(secretData, "state1: value1")).Should(BeTrue())
