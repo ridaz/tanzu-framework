@@ -368,9 +368,10 @@ var _ = Describe("VSphereCSIConfig Reconciler", func() {
 				Namespace: clusterNamespace,
 				Name:      fmt.Sprintf("%s-%s-data-values", clusterName, constants.PVCSIAddonName),
 			}
-			if err := k8sClient.Get(ctx, secretKey, secret); err != nil {
-				fmt.Errorf("Failed to get Secret '%v': '%v'", secretKey, err)
-			}
+
+			err := k8sClient.Get(ctx, secretKey, secret)
+			Expect(err).To(BeNil())
+
 			secretData := string(secret.Data["values.yaml"])
 			fmt.Println(secretData) // debug dump
 			Expect(len(secretData)).Should(Not(BeZero()))
